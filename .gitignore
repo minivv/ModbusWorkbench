@@ -1,0 +1,9 @@
+.DS_Store
+.build/
+.swiftpm/
+.codex/
+dist/
+*.xcodeproj/
+*.xcworkspace/
+*.xcuserstate
+DerivedData/

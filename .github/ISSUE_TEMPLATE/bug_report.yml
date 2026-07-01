@@ -1,0 +1,56 @@
+name: Bug report
+description: 报告 ModbusWorkbench 的问题
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请提供足够信息，方便复现和定位问题。
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: ModbusWorkbench 版本或 commit
+      placeholder: v0.1.0
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS
+      description: macOS 版本
+      placeholder: macOS 14.5
+    validations:
+      required: true
+  - type: dropdown
+    id: transport
+    attributes:
+      label: Transport
+      options:
+        - RTU
+        - TCP
+        - Not applicable
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: 复现步骤、输入帧和当前设置
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: 你期望看到什么结果
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: 实际看到什么结果
+    validations:
+      required: true
