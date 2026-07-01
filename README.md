@@ -3,11 +3,12 @@
 [![CI](https://github.com/minivv/ModbusWorkbench/actions/workflows/ci.yml/badge.svg)](https://github.com/minivv/ModbusWorkbench/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-ModbusWorkbench 是一个 macOS 原生 Modbus 调试小工具。它界面接近 Modbus Poll，但不打开串口、不建立 TCP 连接，只专注于离线报文工作：
+ModbusWorkbench 是一个 macOS 原生 Modbus 调试小工具。不打开串口、不建立 TCP 连接，只专注于离线报文工作：
 
 - 构建 Modbus RTU / TCP 请求帧
 - 粘贴响应帧后解析字段、CRC、寄存器、线圈和异常响应
 - 对寄存器数据进行 U16、I16、U32、I32、Float 等常见格式解码
+- 界面友好
 
 ## 界面
 
@@ -20,15 +21,13 @@ ModbusWorkbench 是一个 macOS 原生 Modbus 调试小工具。它界面接近 
 
 ## 下载安装
 
-当前不通过 App Store 分发。请从 [GitHub Releases](https://github.com/minivv/ModbusWorkbench/releases) 下载：
+请从 [GitHub Releases](https://github.com/minivv/ModbusWorkbench/releases) 下载：
 
 ```text
 ModbusWorkbench-<version>-macos-universal.zip
 ```
 
 解压后把 `ModbusWorkbench.app` 拖到 `/Applications` 即可。没有 Developer ID 签名和公证的版本，首次打开时 macOS 可能会提示无法验证开发者；可以右键点击 app 后选择“打开”，或在系统设置的隐私与安全性中允许打开。
-
-Release 资产不建议直接上传裸 `.app` 目录。`.app` 本质是目录，推荐使用项目脚本生成的 zip 包，避免丢失权限、资源分支或签名相关元数据。
 
 ## 环境要求
 
@@ -70,7 +69,7 @@ dist/ModbusWorkbench.app
 
 ## 发布包
 
-本地生成 GitHub Release 同款 zip：
+本地生成 GitHub Release zip：
 
 ```bash
 swift test
