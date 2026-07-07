@@ -2,21 +2,24 @@ import SwiftUI
 
 struct DecodedItemsTable: View {
   @ObservedObject var store: WorkbenchStore
-  let frame: ParsedFrame
+  let frames: [ParsedFrame]
+  let comparisonRows: [RegisterComparisonRow]
 
   var body: some View {
-    if frame.isRegisterRead {
+    if !frames.isEmpty, frames.allSatisfy({ $0.isRegisterRead }) {
       registerRows
-    } else if frame.isBitRead {
-      bitItems
-    } else if frame.decodedItems.isEmpty {
+    } else if frames.count == 1, let frame = frames.first, frame.isBitRead {
+      bitItems(frame: frame)
+    } else if frames.count == 1, let frame = frames.first, frame.decodedItems.isEmpty {
       EmptyStateView(title: "没有可解析的数据值", systemImage: "tablecells.badge.ellipsis")
+    } else if frames.count == 1, let frame = frames.first {
+      simpleItems(frame: frame)
     } else {
-      simpleItems
+      EmptyStateView(title: "多条响应类型不一致", systemImage: "tablecells.badge.ellipsis")
     }
   }
 
-  private var bitItems: some View {
+  private func bitItems(frame: ParsedFrame) -> some View {
     LazyVGrid(
       columns: [GridItem(.adaptive(minimum: 76), spacing: 6)],
       alignment: .leading,
@@ -35,23 +38,21 @@ struct DecodedItemsTable: View {
   }
 
   private var registerRows: some View {
-    let rows = NumberDecoder.registerRows(
-      startAddress: store.assumedStartAddress,
-      registers: frame.registerValues,
-      defaultMode: store.parseDisplayMode,
-      overrides: store.registerDisplayOverrides
-    )
+    let valueCount = max(frames.count, 1)
 
-    return VStack(alignment: .leading, spacing: 0) {
-      RegisterHeaderRow()
+    return ScrollView(.horizontal) {
+      VStack(alignment: .leading, spacing: 0) {
+        RegisterHeaderRow(valueCount: valueCount)
 
-      LazyVStack(alignment: .leading, spacing: 0) {
-        ForEach(rows) { row in
-          RegisterValueRow(row: row, mode: modeBinding(for: row.address))
-            .padding(.vertical, 7)
-            .background(row.address.isMultiple(of: 2) ? Color.clear : Color.secondary.opacity(0.06))
+        LazyVStack(alignment: .leading, spacing: 0) {
+          ForEach(comparisonRows) { row in
+            RegisterValueRow(row: row, mode: modeBinding(for: row.address))
+              .padding(.vertical, 7)
+              .background(row.address.isMultiple(of: 2) ? Color.clear : Color.secondary.opacity(0.06))
+          }
         }
       }
+      .frame(minWidth: tableWidth(valueCount: valueCount), alignment: .leading)
     }
     .background(.quaternary.opacity(0.18), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     .overlay {
@@ -60,7 +61,7 @@ struct DecodedItemsTable: View {
     }
   }
 
-  private var simpleItems: some View {
+  private func simpleItems(frame: ParsedFrame) -> some View {
     LazyVGrid(
       columns: [GridItem(.adaptive(minimum: 132), spacing: 10)],
       alignment: .leading,
@@ -88,20 +89,36 @@ struct DecodedItemsTable: View {
     }
   }
 
+  private func tableWidth(valueCount: Int) -> CGFloat {
+    RegisterTableLayout.addressWidth +
+      RegisterTableLayout.spanWidth +
+      RegisterTableLayout.modeWidth +
+      RegisterTableLayout.rawWidth +
+      (CGFloat(valueCount) * RegisterTableLayout.valueWidth) +
+      (CGFloat(valueCount + 3) * RegisterTableLayout.columnSpacing) +
+      (RegisterTableLayout.horizontalPadding * 2)
+  }
+
   private func modeBinding(for address: Int) -> Binding<DataDisplayMode> {
     Binding(
       get: {
         store.registerDisplayOverrides[address] ?? store.parseDisplayMode
       },
       set: { newValue in
-        if newValue == store.parseDisplayMode {
-          store.registerDisplayOverrides.removeValue(forKey: address)
-        } else {
-          store.registerDisplayOverrides[address] = newValue
-        }
+        store.setRegisterDisplayMode(newValue, for: address)
       }
     )
   }
+}
+
+private enum RegisterTableLayout {
+  static let columnSpacing: CGFloat = 8
+  static let horizontalPadding: CGFloat = 10
+  static let addressWidth: CGFloat = 74
+  static let spanWidth: CGFloat = 44
+  static let modeWidth: CGFloat = 156
+  static let rawWidth: CGFloat = 150
+  static let valueWidth: CGFloat = 132
 }
 
 private struct BitValuePill: View {
@@ -141,34 +158,39 @@ private struct BitValuePill: View {
 }
 
 private struct RegisterHeaderRow: View {
+  let valueCount: Int
+
   var body: some View {
-    HStack(spacing: 12) {
-      Text("寄存器地址").frame(width: 84, alignment: .leading)
-      Text("占用").frame(width: 58, alignment: .leading)
-      Text("解析方式").frame(width: 176, alignment: .leading)
-      Text("原始值").frame(width: 180, alignment: .leading)
-      Text("数值").frame(maxWidth: .infinity, alignment: .leading)
+    HStack(spacing: RegisterTableLayout.columnSpacing) {
+      Text("寄存器地址").frame(width: RegisterTableLayout.addressWidth, alignment: .leading)
+      Text("占用").frame(width: RegisterTableLayout.spanWidth, alignment: .leading)
+      Text("解析方式").frame(width: RegisterTableLayout.modeWidth, alignment: .leading)
+      Text("原始值").frame(width: RegisterTableLayout.rawWidth, alignment: .leading)
+      ForEach(0..<valueCount, id: \.self) { index in
+        Text(valueCount == 1 ? "数值" : "数值 \(index + 1)")
+          .frame(width: RegisterTableLayout.valueWidth, alignment: .leading)
+      }
     }
     .font(.caption.weight(.semibold))
     .foregroundStyle(.secondary)
-    .padding(.horizontal, 12)
+    .padding(.horizontal, RegisterTableLayout.horizontalPadding)
     .padding(.vertical, 9)
     .background(.quaternary.opacity(0.35))
   }
 }
 
 private struct RegisterValueRow: View {
-  let row: RegisterDecodeRow
+  let row: RegisterComparisonRow
   @Binding var mode: DataDisplayMode
 
   var body: some View {
-    HStack(spacing: 12) {
+    HStack(spacing: RegisterTableLayout.columnSpacing) {
       Text("\(row.address)")
-        .frame(width: 84, alignment: .leading)
+        .frame(width: RegisterTableLayout.addressWidth, alignment: .leading)
         .monospacedDigit()
 
       Text(row.span == 1 ? "1 位" : "\(row.span) 位")
-        .frame(width: 58, alignment: .leading)
+        .frame(width: RegisterTableLayout.spanWidth, alignment: .leading)
         .foregroundStyle(.secondary)
         .monospacedDigit()
 
@@ -178,15 +200,31 @@ private struct RegisterValueRow: View {
         }
       }
       .labelsHidden()
-      .frame(width: 176)
+      .controlSize(.small)
+      .frame(width: RegisterTableLayout.modeWidth)
 
       Text(row.raw)
         .font(.system(.callout, design: .monospaced))
         .lineLimit(1)
         .textSelection(.enabled)
-        .frame(width: 180, alignment: .leading)
+        .frame(width: RegisterTableLayout.rawWidth, alignment: .leading)
 
-      VStack(alignment: .leading, spacing: 2) {
+      ForEach(row.values.indices, id: \.self) { index in
+        RegisterValueCell(row: row.values[index], mode: mode)
+      }
+    }
+    .font(.callout)
+    .padding(.horizontal, RegisterTableLayout.horizontalPadding)
+  }
+}
+
+private struct RegisterValueCell: View {
+  let row: RegisterDecodeRow?
+  let mode: DataDisplayMode
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 2) {
+      if let row {
         Text(row.value)
           .font(.system(.callout, design: .monospaced))
           .monospacedDigit()
@@ -198,10 +236,12 @@ private struct RegisterValueRow: View {
             .foregroundStyle(.secondary)
             .lineLimit(1)
         }
+      } else {
+        Text("-")
+          .font(.system(.callout, design: .monospaced))
+          .foregroundStyle(.secondary)
       }
-      .frame(maxWidth: .infinity, alignment: .leading)
     }
-    .font(.callout)
-    .padding(.horizontal, 12)
+    .frame(width: RegisterTableLayout.valueWidth, alignment: .leading)
   }
 }

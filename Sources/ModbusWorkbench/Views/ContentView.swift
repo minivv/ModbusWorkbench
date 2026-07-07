@@ -2,13 +2,14 @@ import SwiftUI
 
 struct ContentView: View {
   @ObservedObject var store: WorkbenchStore
+  @Binding var selection: AppSection
 
   var body: some View {
     NavigationSplitView {
-      SidebarView(selection: $store.selection)
+      SidebarView(selection: $selection)
     } detail: {
       Group {
-        switch store.selection {
+        switch selection {
         case .builder:
           CommandBuilderView(store: store)
         case .parser:
@@ -17,7 +18,7 @@ struct ContentView: View {
           ProtocolReferenceView()
         }
       }
-      .navigationTitle(store.selection.title)
+      .navigationTitle(selection.title)
     }
   }
 }

@@ -10,7 +10,7 @@ struct ResponseParserView: View {
           VStack(alignment: .leading, spacing: 4) {
             Text("粘贴采集到的响应帧，查看字段、校验和数据值。")
               .foregroundStyle(.secondary)
-            Text("输入支持空格、逗号、换行、0x 前缀或紧凑十六进制。")
+            Text("每行一条响应帧；单行内支持空格、逗号、0x 前缀或紧凑十六进制。")
               .font(.caption)
               .foregroundStyle(.tertiary)
           }
@@ -151,25 +151,28 @@ private struct ParserResultPanel: View {
         Label(error, systemImage: "xmark.octagon.fill")
           .foregroundStyle(.red)
           .font(.callout)
-      } else if let frame = store.parsedFrame {
+      } else if !store.parsedFrames.isEmpty {
+        let frames = store.parsedFrames
         VStack(alignment: .leading, spacing: 16) {
-          ParserStatusRow(frame: frame)
+          ParserStatusRow(frames: frames)
 
-          if frame.isException {
+          if frames.count == 1, let frame = frames.first, frame.isException {
             ExceptionView(frame: frame)
           }
 
-          AnnotatedFrameView(
-            title: "响应帧分段",
-            segments: FrameSegmentBuilder.parsed(frame: frame)
-          )
+          if frames.count == 1, let frame = frames.first {
+            AnnotatedFrameView(
+              title: "响应帧分段",
+              segments: FrameSegmentBuilder.parsed(frame: frame)
+            )
+          }
 
-          WarningList(warnings: frame.warnings)
+          WarningList(warnings: warnings(for: frames))
 
           VStack(alignment: .leading, spacing: 10) {
             Text("解析值")
               .font(.subheadline.weight(.semibold))
-            DecodedItemsTable(store: store, frame: frame)
+            DecodedItemsTable(store: store, frames: frames, comparisonRows: store.registerComparisonRows)
           }
         }
       } else {
@@ -177,25 +180,52 @@ private struct ParserResultPanel: View {
       }
     }
   }
+
+  private func warnings(for frames: [ParsedFrame]) -> [String] {
+    if frames.count == 1 {
+      return frames.first?.warnings ?? []
+    }
+
+    return frames.enumerated().flatMap { index, frame in
+      frame.warnings.map { "第 \(index + 1) 条：\($0)" }
+    }
+  }
 }
 
 private struct ParserStatusRow: View {
-  let frame: ParsedFrame
+  let frames: [ParsedFrame]
 
   var body: some View {
+    let frame = frames.first
+    let crcResults = frames.compactMap(\.crcIsValid)
+    let validCRCCount = crcResults.filter { $0 }.count
+    let lengthResults = frames.compactMap(\.lengthIsValid)
+    let validLengthCount = lengthResults.filter { $0 }.count
+    let exceptionCount = frames.filter(\.isException).count
+
     HStack(spacing: 8) {
-      StatusBadge(text: frame.transport.rawValue, kind: .neutral)
-
-      if let crcIsValid = frame.crcIsValid {
-        StatusBadge(text: crcIsValid ? "CRC 正常" : "CRC 失败", kind: crcIsValid ? .ok : .error)
+      if let frame {
+        StatusBadge(text: frame.transport.rawValue, kind: .neutral)
       }
 
-      if let lengthIsValid = frame.lengthIsValid {
-        StatusBadge(text: lengthIsValid ? "长度正常" : "长度不一致", kind: lengthIsValid ? .ok : .warning)
+      if frames.count > 1 {
+        StatusBadge(text: "\(frames.count) 条", kind: .neutral)
       }
 
-      if frame.isException {
-        StatusBadge(text: frame.exceptionTitle ?? "异常", kind: .error)
+      if !crcResults.isEmpty {
+        let allValid = validCRCCount == crcResults.count
+        let text = frames.count == 1 ? (allValid ? "CRC 正常" : "CRC 失败") : "CRC \(validCRCCount)/\(crcResults.count)"
+        StatusBadge(text: text, kind: allValid ? .ok : .error)
+      }
+
+      if !lengthResults.isEmpty {
+        let allValid = validLengthCount == lengthResults.count
+        let text = frames.count == 1 ? (allValid ? "长度正常" : "长度不一致") : "长度 \(validLengthCount)/\(lengthResults.count)"
+        StatusBadge(text: text, kind: allValid ? .ok : .warning)
+      }
+
+      if exceptionCount > 0 {
+        StatusBadge(text: frames.count == 1 ? (frame?.exceptionTitle ?? "异常") : "异常 \(exceptionCount)", kind: .error)
       }
     }
   }

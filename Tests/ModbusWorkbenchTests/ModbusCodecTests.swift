@@ -50,6 +50,23 @@ final class ModbusCodecTests: XCTestCase {
     XCTAssertEqual(parsed.decodedItems.map(\.value), ["42", "16968"])
   }
 
+  func testParseResponseSupportsMultipleLines() throws {
+    let first = "01 03 04 00 2A 42 48 EB 6D"
+    let second = HexFormatter.bytes(ModbusCRC.append(to: [0x01, 0x03, 0x04, 0x00, 0x2B, 0x42, 0x49]))
+    let store = WorkbenchStore()
+
+    store.responseText = "\(first)\n\(second)"
+    store.expectedCountText = "2"
+    store.parseResponse()
+
+    XCTAssertNil(store.parseError)
+    XCTAssertEqual(store.parsedFrames.count, 2)
+    XCTAssertEqual(store.parsedFrames[0].decodedItems.map(\.value), ["42", "16968"])
+    XCTAssertEqual(store.parsedFrames[1].decodedItems.map(\.value), ["43", "16969"])
+    XCTAssertEqual(store.registerComparisonRows.count, 2)
+    XCTAssertEqual(store.registerComparisonRows[0].values.map { $0?.value }, ["42", "43"])
+  }
+
   func testParseTCPException() throws {
     let bytes = try HexFormatter.parseHexBytes("00 01 00 00 00 03 01 83 02")
 

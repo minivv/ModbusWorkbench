@@ -305,6 +305,15 @@ struct RegisterDecodeRow: Identifiable, Hashable {
   var note: String
 }
 
+struct RegisterComparisonRow: Identifiable, Hashable {
+  var id: Int { address }
+  var address: Int
+  var span: Int
+  var mode: DataDisplayMode
+  var raw: String
+  var values: [RegisterDecodeRow?]
+}
+
 enum ModbusCodecError: LocalizedError, Equatable {
   case emptyInput
   case invalidHexToken(String)

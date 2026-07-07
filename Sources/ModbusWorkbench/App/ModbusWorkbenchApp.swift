@@ -5,10 +5,11 @@ import SwiftUI
 struct ModbusWorkbenchApp: App {
   @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
   @StateObject private var workbench = WorkbenchStore()
+  @State private var selection: AppSection = .builder
 
   var body: some Scene {
     WindowGroup("Modbus 调试台") {
-      ContentView(store: workbench)
+      ContentView(store: workbench, selection: $selection)
         .frame(minWidth: 1000, minHeight: 660)
     }
     .commands {
@@ -26,11 +27,13 @@ struct ModbusWorkbenchApp: App {
         Divider()
 
         Button("载入寄存器示例") {
+          selection = .parser
           workbench.loadRegisterExample()
         }
         .keyboardShortcut("1", modifiers: [.command])
 
         Button("载入异常示例") {
+          selection = .parser
           workbench.loadExceptionExample()
         }
         .keyboardShortcut("2", modifiers: [.command])
