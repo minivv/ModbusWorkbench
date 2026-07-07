@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct DecodedItemsTable: View {
-  @Bindable var store: WorkbenchStore
+  @ObservedObject var store: WorkbenchStore
   let frame: ParsedFrame
 
   var body: some View {
@@ -143,7 +143,7 @@ private struct BitValuePill: View {
 private struct RegisterHeaderRow: View {
   var body: some View {
     HStack(spacing: 12) {
-      Text("地址").frame(width: 62, alignment: .leading)
+      Text("寄存器地址").frame(width: 84, alignment: .leading)
       Text("占用").frame(width: 58, alignment: .leading)
       Text("解析方式").frame(width: 176, alignment: .leading)
       Text("原始值").frame(width: 180, alignment: .leading)
@@ -164,7 +164,7 @@ private struct RegisterValueRow: View {
   var body: some View {
     HStack(spacing: 12) {
       Text("\(row.address)")
-        .frame(width: 62, alignment: .leading)
+        .frame(width: 84, alignment: .leading)
         .monospacedDigit()
 
       Text(row.span == 1 ? "1 位" : "\(row.span) 位")

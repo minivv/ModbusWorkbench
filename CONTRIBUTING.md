@@ -4,7 +4,7 @@
 
 ## 开发环境
 
-- macOS 14 或更高版本
+- macOS 13 或更高版本
 - Swift 5.9+
 - Xcode Command Line Tools 或完整 Xcode
 

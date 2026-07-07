@@ -2,6 +2,17 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 的结构，并使用语义化版本标签发布。
 
+## [0.1.1] - 2026-07-07
+
+### Changed
+
+- 最低运行系统调整为 macOS 13。
+- 响应解析寄存器表将地址列标注为“寄存器地址”。
+
+### Fixed
+
+- 移除 macOS 14 专用 Observation API，改用 macOS 13 可用的 ObservableObject 状态模型。
+
 ## [0.1.0] - 2026-07-01
 
 ### Added

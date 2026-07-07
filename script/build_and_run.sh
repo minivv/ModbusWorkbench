@@ -4,7 +4,7 @@ set -euo pipefail
 MODE="${1:-run}"
 APP_NAME="ModbusWorkbench"
 BUNDLE_ID="io.github.minivv.ModbusWorkbench"
-MIN_SYSTEM_VERSION="14.0"
+MIN_SYSTEM_VERSION="13.0"
 APP_VERSION="${APP_VERSION:-0.1.0-dev}"
 BUILD_NUMBER="${BUILD_NUMBER:-$(date +%Y%m%d%H%M)}"
 

@@ -3,7 +3,7 @@ set -euo pipefail
 
 APP_NAME="ModbusWorkbench"
 BUNDLE_ID="io.github.minivv.ModbusWorkbench"
-MIN_SYSTEM_VERSION="14.0"
+MIN_SYSTEM_VERSION="13.0"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VERSION="${1:-}"

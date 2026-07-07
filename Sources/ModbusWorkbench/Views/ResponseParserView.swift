@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ResponseParserView: View {
-  @Bindable var store: WorkbenchStore
+  @ObservedObject var store: WorkbenchStore
 
   var body: some View {
     ScrollView {
@@ -30,18 +30,18 @@ struct ResponseParserView: View {
       }
       .padding(20)
     }
-    .onChange(of: store.parserTransport) { _, _ in store.parseResponse() }
-    .onChange(of: store.responseText) { _, _ in store.parseResponse() }
-    .onChange(of: store.parseDisplayMode) { _, _ in store.parseResponse() }
-    .onChange(of: store.assumedStartAddress) { _, _ in store.parseResponse() }
-    .onChange(of: store.expectedCountText) { _, _ in store.parseResponse() }
+    .onChange(of: store.parserTransport) { _ in store.parseResponse() }
+    .onChange(of: store.responseText) { _ in store.parseResponse() }
+    .onChange(of: store.parseDisplayMode) { _ in store.parseResponse() }
+    .onChange(of: store.assumedStartAddress) { _ in store.parseResponse() }
+    .onChange(of: store.expectedCountText) { _ in store.parseResponse() }
   }
 
   private var topPanelMinHeight: CGFloat { 190 }
 }
 
 private struct ParserInputPanel: View {
-  @Bindable var store: WorkbenchStore
+  @ObservedObject var store: WorkbenchStore
   let minHeight: CGFloat
 
   var body: some View {
@@ -88,7 +88,7 @@ private struct ParserInputPanel: View {
 }
 
 private struct ParserOptionsPanel: View {
-  @Bindable var store: WorkbenchStore
+  @ObservedObject var store: WorkbenchStore
   let minHeight: CGFloat
 
   var body: some View {
@@ -143,7 +143,7 @@ private struct ParserOptionsPanel: View {
 }
 
 private struct ParserResultPanel: View {
-  @Bindable var store: WorkbenchStore
+  @ObservedObject var store: WorkbenchStore
 
   var body: some View {
     Panel(title: "解析结果", systemImage: "waveform.path.ecg") {

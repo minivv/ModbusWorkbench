@@ -4,7 +4,7 @@ import SwiftUI
 @main
 struct ModbusWorkbenchApp: App {
   @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-  @State private var workbench = WorkbenchStore()
+  @StateObject private var workbench = WorkbenchStore()
 
   var body: some Scene {
     WindowGroup("Modbus 调试台") {

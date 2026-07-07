@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-  @Bindable var store: WorkbenchStore
+  @ObservedObject var store: WorkbenchStore
 
   var body: some View {
     NavigationSplitView {

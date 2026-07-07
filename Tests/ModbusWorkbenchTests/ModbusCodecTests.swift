@@ -82,6 +82,17 @@ final class ModbusCodecTests: XCTestCase {
     XCTAssertTrue(decoded.value.contains("e+"))
   }
 
+  func testRegisterRowsApplyAssumedStartAddress() throws {
+    let rows = NumberDecoder.registerRows(
+      startAddress: 5,
+      registers: Array(repeating: UInt16(0), count: 34),
+      defaultMode: .unsigned16,
+      overrides: [:]
+    )
+
+    XCTAssertEqual(rows[32].address, 37)
+  }
+
   func testBuildMultipleCoilsPacksLeastSignificantBitFirst() throws {
     var input = CommandInput()
     input.function = .writeMultipleCoils

@@ -1,7 +1,8 @@
 import SwiftUI
 
 struct CommandBuilderView: View {
-  @Bindable var store: WorkbenchStore
+  @ObservedObject var store: WorkbenchStore
+  @State private var previousFunction: ModbusFunction = .readHoldingRegisters
 
   var body: some View {
     ScrollView {
@@ -30,17 +31,21 @@ struct CommandBuilderView: View {
       }
       .padding(20)
     }
-    .onChange(of: store.command.transport) { _, _ in store.buildCommand() }
-    .onChange(of: store.command.transactionID) { _, _ in store.buildCommand() }
-    .onChange(of: store.command.unitID) { _, _ in store.buildCommand() }
-    .onChange(of: store.command.function) { oldFunction, function in
-      normalizeDefaults(from: oldFunction, to: function)
+    .onAppear {
+      previousFunction = store.command.function
+    }
+    .onChange(of: store.command.transport) { _ in store.buildCommand() }
+    .onChange(of: store.command.transactionID) { _ in store.buildCommand() }
+    .onChange(of: store.command.unitID) { _ in store.buildCommand() }
+    .onChange(of: store.command.function) { function in
+      normalizeDefaults(from: previousFunction, to: function)
+      previousFunction = function
       store.buildCommand()
     }
-    .onChange(of: store.command.startAddress) { _, _ in store.buildCommand() }
-    .onChange(of: store.command.quantity) { _, _ in store.buildCommand() }
-    .onChange(of: store.command.singleValue) { _, _ in store.buildCommand() }
-    .onChange(of: store.command.valuesText) { _, _ in store.buildCommand() }
+    .onChange(of: store.command.startAddress) { _ in store.buildCommand() }
+    .onChange(of: store.command.quantity) { _ in store.buildCommand() }
+    .onChange(of: store.command.singleValue) { _ in store.buildCommand() }
+    .onChange(of: store.command.valuesText) { _ in store.buildCommand() }
   }
 
   private func normalizeDefaults(from oldFunction: ModbusFunction, to function: ModbusFunction) {
@@ -94,7 +99,7 @@ struct CommandBuilderView: View {
 }
 
 private struct CommandParametersPanel: View {
-  @Bindable var store: WorkbenchStore
+  @ObservedObject var store: WorkbenchStore
   let minHeight: CGFloat
 
   var body: some View {
@@ -130,7 +135,7 @@ private struct CommandParametersPanel: View {
 }
 
 private struct FunctionParametersPanel: View {
-  @Bindable var store: WorkbenchStore
+  @ObservedObject var store: WorkbenchStore
   let minHeight: CGFloat
 
   var body: some View {
@@ -224,7 +229,7 @@ private struct FunctionParametersPanel: View {
 }
 
 private struct CommandOutputPanel: View {
-  @Bindable var store: WorkbenchStore
+  @ObservedObject var store: WorkbenchStore
 
   var body: some View {
     Panel(title: "生成的报文", systemImage: "terminal") {
@@ -277,7 +282,7 @@ private struct NumericValueField: View {
       .textFieldStyle(.roundedBorder)
       .monospacedDigit()
       .frame(width: 92)
-      .onChange(of: value) { _, newValue in
+      .onChange(of: value) { newValue in
         value = min(max(newValue, range.lowerBound), range.upperBound)
       }
   }

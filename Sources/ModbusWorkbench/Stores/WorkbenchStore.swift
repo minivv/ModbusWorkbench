@@ -1,22 +1,21 @@
 import AppKit
+import Combine
 import Foundation
-import Observation
 
-@Observable
-final class WorkbenchStore {
-  var selection: AppSection = .builder
-  var command = CommandInput()
-  var builtFrame: BuiltFrame?
-  var commandError: String?
+final class WorkbenchStore: ObservableObject {
+  @Published var selection: AppSection = .builder
+  @Published var command = CommandInput()
+  @Published var builtFrame: BuiltFrame?
+  @Published var commandError: String?
 
-  var parserTransport: TransportMode = .rtu
-  var responseText = "01 03 04 00 2A 42 48 EB 6D"
-  var parseDisplayMode: DataDisplayMode = .unsigned16
-  var registerDisplayOverrides: [Int: DataDisplayMode] = [:]
-  var assumedStartAddress: Int = 0
-  var expectedCountText = "2"
-  var parsedFrame: ParsedFrame?
-  var parseError: String?
+  @Published var parserTransport: TransportMode = .rtu
+  @Published var responseText = "01 03 04 00 2A 42 48 EB 6D"
+  @Published var parseDisplayMode: DataDisplayMode = .unsigned16
+  @Published var registerDisplayOverrides: [Int: DataDisplayMode] = [:]
+  @Published var assumedStartAddress: Int = 0
+  @Published var expectedCountText = "2"
+  @Published var parsedFrame: ParsedFrame?
+  @Published var parseError: String?
 
   init() {
     buildCommand()
