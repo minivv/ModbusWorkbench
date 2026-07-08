@@ -16,6 +16,8 @@ struct ContentView: View {
           ResponseParserView(store: store)
         case .reference:
           ProtocolReferenceView()
+        case .about:
+          AboutView()
         }
       }
       .navigationTitle(selection.title)

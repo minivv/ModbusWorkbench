@@ -114,11 +114,11 @@ struct DecodedItemsTable: View {
 private enum RegisterTableLayout {
   static let columnSpacing: CGFloat = 8
   static let horizontalPadding: CGFloat = 10
-  static let addressWidth: CGFloat = 74
-  static let spanWidth: CGFloat = 44
-  static let modeWidth: CGFloat = 156
-  static let rawWidth: CGFloat = 150
-  static let valueWidth: CGFloat = 132
+  static let addressWidth: CGFloat = 50
+  static let spanWidth: CGFloat = 25
+  static let modeWidth: CGFloat = 140
+  static let rawWidth: CGFloat = 140
+  static let valueWidth: CGFloat = 130
 }
 
 private struct BitValuePill: View {

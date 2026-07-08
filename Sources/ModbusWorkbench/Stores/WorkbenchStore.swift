@@ -3,6 +3,11 @@ import Combine
 import Foundation
 
 final class WorkbenchStore: ObservableObject {
+  private static let registerDisplayPresetsKey = "registerDisplayPresets"
+  private static let maxRegisterDisplayPresetCount = 24
+
+  private let userDefaults: UserDefaults
+
   @Published var command = CommandInput()
   @Published var builtFrame: BuiltFrame?
   @Published var commandError: String?
@@ -16,12 +21,15 @@ final class WorkbenchStore: ObservableObject {
   @Published var parsedFrames: [ParsedFrame] = []
   @Published var registerComparisonRows: [RegisterComparisonRow] = []
   @Published var parseError: String?
+  @Published var registerDisplayPresets: [RegisterDisplayPreset] = []
 
   var parsedFrame: ParsedFrame? {
     parsedFrames.first
   }
 
-  init() {
+  init(userDefaults: UserDefaults = .standard) {
+    self.userDefaults = userDefaults
+    registerDisplayPresets = Self.loadRegisterDisplayPresets(from: userDefaults)
     buildCommand()
     parseResponse()
   }
@@ -70,6 +78,66 @@ final class WorkbenchStore: ObservableObject {
       registerDisplayOverrides[address] = mode
     }
     rebuildRegisterComparisonRows()
+  }
+
+  var canSaveRegisterDisplayPreset: Bool {
+    !registerComparisonRows.isEmpty
+  }
+
+  func suggestedRegisterDisplayPresetName() -> String {
+    guard let first = registerComparisonRows.first else {
+      return "解析方式"
+    }
+
+    let last = registerComparisonRows.last?.address ?? first.address
+    let range = first.address == last ? "\(first.address)" : "\(first.address)-\(last)"
+    return "地址 \(range)"
+  }
+
+  func saveCurrentRegisterDisplayPreset(named rawName: String) {
+    guard canSaveRegisterDisplayPreset else { return }
+
+    let now = Date()
+    let name = normalizedPresetName(rawName)
+    let preset = RegisterDisplayPreset(
+      id: UUID(),
+      name: name,
+      startAddress: assumedStartAddress,
+      pointCount: currentRegisterDisplayPresetPointCount(),
+      defaultMode: parseDisplayMode,
+      overrides: currentRegisterDisplayPresetOverrides(),
+      createdAt: now,
+      updatedAt: now
+    )
+
+    if let index = registerDisplayPresets.firstIndex(where: { $0.name.caseInsensitiveCompare(name) == .orderedSame }) {
+      var updated = preset
+      updated.id = registerDisplayPresets[index].id
+      updated.createdAt = registerDisplayPresets[index].createdAt
+      registerDisplayPresets.remove(at: index)
+      registerDisplayPresets.insert(updated, at: 0)
+    } else {
+      registerDisplayPresets.insert(preset, at: 0)
+    }
+
+    if registerDisplayPresets.count > Self.maxRegisterDisplayPresetCount {
+      registerDisplayPresets = Array(registerDisplayPresets.prefix(Self.maxRegisterDisplayPresetCount))
+    }
+
+    persistRegisterDisplayPresets()
+  }
+
+  func applyRegisterDisplayPreset(id: RegisterDisplayPreset.ID) {
+    guard let preset = registerDisplayPresets.first(where: { $0.id == id }) else { return }
+    assumedStartAddress = preset.startAddress
+    parseDisplayMode = preset.defaultMode
+    registerDisplayOverrides = preset.overrides
+    parseResponse()
+  }
+
+  func deleteRegisterDisplayPreset(id: RegisterDisplayPreset.ID) {
+    registerDisplayPresets.removeAll { $0.id == id }
+    persistRegisterDisplayPresets()
   }
 
   func copyBuiltFrame() {
@@ -130,6 +198,51 @@ final class WorkbenchStore: ObservableObject {
   private func copy(_ text: String) {
     NSPasteboard.general.clearContents()
     NSPasteboard.general.setString(text, forType: .string)
+  }
+
+  private func normalizedPresetName(_ rawName: String) -> String {
+    let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
+    let name = trimmed.isEmpty ? suggestedRegisterDisplayPresetName() : trimmed
+    return String(name.prefix(40))
+  }
+
+  private func currentRegisterDisplayPresetOverrides() -> [Int: DataDisplayMode] {
+    let visibleAddresses = Set(registerComparisonRows.map(\.address))
+    return registerDisplayOverrides.filter { address, mode in
+      visibleAddresses.contains(address) && mode != parseDisplayMode
+    }
+  }
+
+  private func currentRegisterDisplayPresetPointCount() -> Int {
+    guard
+      let first = registerComparisonRows.first,
+      let last = registerComparisonRows.last
+    else {
+      return 0
+    }
+
+    return last.address + last.span - first.address
+  }
+
+  private static func loadRegisterDisplayPresets(from userDefaults: UserDefaults) -> [RegisterDisplayPreset] {
+    guard let data = userDefaults.data(forKey: registerDisplayPresetsKey) else {
+      return []
+    }
+
+    do {
+      return try JSONDecoder().decode([RegisterDisplayPreset].self, from: data)
+    } catch {
+      return []
+    }
+  }
+
+  private func persistRegisterDisplayPresets() {
+    do {
+      let data = try JSONEncoder().encode(registerDisplayPresets)
+      userDefaults.set(data, forKey: Self.registerDisplayPresetsKey)
+    } catch {
+      userDefaults.removeObject(forKey: Self.registerDisplayPresetsKey)
+    }
   }
 
   private func responseLines() throws -> [String] {

@@ -7,7 +7,7 @@ enum TransportMode: String, CaseIterable, Identifiable {
   var id: String { rawValue }
 }
 
-enum DataDisplayMode: String, CaseIterable, Identifiable {
+enum DataDisplayMode: String, CaseIterable, Codable, Identifiable {
   case unsigned16 = "UINT16"
   case signed16 = "INT16"
   case unsigned32ABCD = "UINT32_ABCD"

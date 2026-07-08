@@ -8,9 +8,9 @@ struct ResponseParserView: View {
       VStack(alignment: .leading, spacing: 16) {
         HStack {
           VStack(alignment: .leading, spacing: 4) {
-            Text("粘贴采集到的响应帧，查看字段、校验和数据值。")
+            Text("粘贴响应帧，查看字段、校验和数据值。支持多条解析，每行一条响应帧。")
               .foregroundStyle(.secondary)
-            Text("每行一条响应帧；单行内支持空格、逗号、0x 前缀或紧凑十六进制。")
+            Text("单行内支持空格、逗号、0x 前缀或紧凑十六进制。")
               .font(.caption)
               .foregroundStyle(.tertiary)
           }
@@ -170,8 +170,16 @@ private struct ParserResultPanel: View {
           WarningList(warnings: warnings(for: frames))
 
           VStack(alignment: .leading, spacing: 10) {
-            Text("解析值")
-              .font(.subheadline.weight(.semibold))
+            HStack(spacing: 8) {
+              Text("解析值")
+                .font(.subheadline.weight(.semibold))
+
+              Spacer()
+
+              if frames.allSatisfy({ $0.isRegisterRead }) {
+                RegisterDisplayPresetControls(store: store)
+              }
+            }
             DecodedItemsTable(store: store, frames: frames, comparisonRows: store.registerComparisonRows)
           }
         }
@@ -188,6 +196,78 @@ private struct ParserResultPanel: View {
 
     return frames.enumerated().flatMap { index, frame in
       frame.warnings.map { "第 \(index + 1) 条：\($0)" }
+    }
+  }
+}
+
+private struct RegisterDisplayPresetControls: View {
+  @ObservedObject var store: WorkbenchStore
+  @State private var isSavePopoverPresented = false
+  @State private var draftName = ""
+
+  var body: some View {
+    HStack(spacing: 6) {
+      Menu {
+        if store.registerDisplayPresets.isEmpty {
+          Text("暂无已保存解析模板")
+        } else {
+          ForEach(store.registerDisplayPresets) { preset in
+            Button("\(preset.name) · \(preset.summary)") {
+              store.applyRegisterDisplayPreset(id: preset.id)
+            }
+          }
+
+          Divider()
+
+          Menu("删除解析模板") {
+            ForEach(store.registerDisplayPresets) { preset in
+              Button(preset.name, role: .destructive) {
+                store.deleteRegisterDisplayPreset(id: preset.id)
+              }
+            }
+          }
+        }
+      } label: {
+        Label("已保存解析模板", systemImage: "bookmark")
+      }
+      .menuStyle(.borderlessButton)
+      .controlSize(.small)
+      .fixedSize()
+      .help("选择已保存解析模板")
+
+      Button {
+        draftName = store.suggestedRegisterDisplayPresetName()
+        isSavePopoverPresented = true
+      } label: {
+        Label("保存为解析模板", systemImage: "plus")
+      }
+      .buttonStyle(.bordered)
+      .controlSize(.small)
+      .disabled(!store.canSaveRegisterDisplayPreset)
+      .help("保存为解析模板")
+      .popover(isPresented: $isSavePopoverPresented, arrowEdge: .bottom) {
+        VStack(alignment: .leading, spacing: 10) {
+          Text("保存为解析模板")
+            .font(.headline)
+
+          TextField("名称", text: $draftName)
+            .textFieldStyle(.roundedBorder)
+            .frame(width: 220)
+
+          HStack {
+            Spacer()
+            Button("取消") {
+              isSavePopoverPresented = false
+            }
+            Button("保存") {
+              store.saveCurrentRegisterDisplayPreset(named: draftName)
+              isSavePopoverPresented = false
+            }
+            .keyboardShortcut(.defaultAction)
+          }
+        }
+        .padding(12)
+      }
     }
   }
 }

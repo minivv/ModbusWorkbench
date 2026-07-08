@@ -4,6 +4,7 @@ enum AppSection: String, CaseIterable, Identifiable {
   case builder
   case parser
   case reference
+  case about
 
   var id: String { rawValue }
 
@@ -15,6 +16,8 @@ enum AppSection: String, CaseIterable, Identifiable {
       "响应解析"
     case .reference:
       "协议说明"
+    case .about:
+      "关于"
     }
   }
 
@@ -26,6 +29,8 @@ enum AppSection: String, CaseIterable, Identifiable {
       "解析粘贴的响应"
     case .reference:
       "限制和字节序"
+    case .about:
+      "项目链接"
     }
   }
 
@@ -37,6 +42,8 @@ enum AppSection: String, CaseIterable, Identifiable {
       "doc.text.magnifyingglass"
     case .reference:
       "book"
+    case .about:
+      "info.circle"
     }
   }
 }

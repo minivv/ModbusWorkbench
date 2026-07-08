@@ -110,6 +110,63 @@ final class ModbusCodecTests: XCTestCase {
     XCTAssertEqual(rows[32].address, 37)
   }
 
+  func testRegisterDisplayPresetsPersistAndApply() throws {
+    let suiteName = "ModbusWorkbenchTests.\(UUID().uuidString)"
+    let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+    defer {
+      defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    let response = HexFormatter.bytes(ModbusCRC.append(to: [0x01, 0x03, 0x46] + Array(repeating: UInt8(0), count: 70)))
+    let store = WorkbenchStore(userDefaults: defaults)
+    store.responseText = response
+    store.assumedStartAddress = 5
+    store.expectedCountText = "35"
+    store.parseResponse()
+    store.setRegisterDisplayMode(.floatABCD, for: 5)
+    store.saveCurrentRegisterDisplayPreset(named: "温度点位")
+
+    XCTAssertEqual(store.registerDisplayPresets.count, 1)
+    XCTAssertEqual(store.registerDisplayPresets.first?.summary, "起始 5-39 共 35 点位")
+
+    let presetID = try XCTUnwrap(store.registerDisplayPresets.first?.id)
+    store.assumedStartAddress = 0
+    store.parseDisplayMode = .signed16
+    store.registerDisplayOverrides = [:]
+    store.parseResponse()
+
+    store.applyRegisterDisplayPreset(id: presetID)
+
+    XCTAssertEqual(store.parseDisplayMode, .unsigned16)
+    XCTAssertEqual(store.assumedStartAddress, 5)
+    XCTAssertEqual(store.registerDisplayOverrides[5], .floatABCD)
+    XCTAssertEqual(store.registerComparisonRows.first?.mode, .floatABCD)
+
+    let reloaded = WorkbenchStore(userDefaults: defaults)
+    XCTAssertEqual(reloaded.registerDisplayPresets.map(\.name), ["温度点位"])
+    XCTAssertEqual(reloaded.registerDisplayPresets.first?.startAddress, 5)
+    XCTAssertEqual(reloaded.registerDisplayPresets.first?.pointCount, 35)
+    XCTAssertEqual(reloaded.registerDisplayPresets.first?.overrides[5], .floatABCD)
+  }
+
+  func testRegisterDisplayPresetDeletePersists() throws {
+    let suiteName = "ModbusWorkbenchTests.\(UUID().uuidString)"
+    let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+    defer {
+      defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    let store = WorkbenchStore(userDefaults: defaults)
+    store.setRegisterDisplayMode(.floatABCD, for: 0)
+    store.saveCurrentRegisterDisplayPreset(named: "临时预设")
+
+    let presetID = try XCTUnwrap(store.registerDisplayPresets.first?.id)
+    store.deleteRegisterDisplayPreset(id: presetID)
+
+    let reloaded = WorkbenchStore(userDefaults: defaults)
+    XCTAssertTrue(reloaded.registerDisplayPresets.isEmpty)
+  }
+
   func testBuildMultipleCoilsPacksLeastSignificantBitFirst() throws {
     var input = CommandInput()
     input.function = .writeMultipleCoils
