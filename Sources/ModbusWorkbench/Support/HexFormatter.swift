@@ -1,6 +1,10 @@
 import Foundation
 
 enum HexFormatter {
+  static func compactInput(_ text: String) -> String {
+    String(text.filter { !$0.isWhitespace || $0.isNewline })
+  }
+
   static func byte(_ value: UInt8) -> String {
     String(format: "%02X", value)
   }

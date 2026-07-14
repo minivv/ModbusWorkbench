@@ -10,7 +10,7 @@ struct ResponseParserView: View {
           VStack(alignment: .leading, spacing: 4) {
             Text("粘贴响应帧，查看字段、校验和数据值。支持多条解析，每行一条响应帧。")
               .foregroundStyle(.secondary)
-            Text("单行内支持空格、逗号、0x 前缀或紧凑十六进制。")
+            Text("粘贴时自动移除行内空白；支持逗号、0x 前缀或紧凑十六进制。")
               .font(.caption)
               .foregroundStyle(.tertiary)
           }
@@ -72,7 +72,7 @@ private struct ParserInputPanel: View {
           .controlSize(.small)
         }
 
-        TextEditor(text: $store.responseText)
+        TextEditor(text: $store.responseText.compactingHexInput())
           .font(.system(.body, design: .monospaced))
           .frame(height: 68)
           .scrollContentBackground(.hidden)

@@ -50,6 +50,34 @@ final class ModbusCodecTests: XCTestCase {
     XCTAssertEqual(parsed.decodedItems.map(\.value), ["42", "16968"])
   }
 
+  func testCompactingGroupedResponseInputRemovesInlineWhitespace() throws {
+    let grouped = "e303 1c00\t0700 0100 0000 e300 0201 0e00 0102 3400 0000 6400 0000 0000 0000 0049 61"
+    let compact = HexFormatter.compactInput(grouped)
+
+    XCTAssertEqual(
+      compact,
+      "e3031c00070001000000e30002010e000102340000006400000000000000004961"
+    )
+
+    let bytes = try HexFormatter.parseHexBytes(compact)
+    let parsed = try ModbusCodec.parseFrame(
+      bytes: bytes,
+      transport: .rtu,
+      displayMode: .unsigned16,
+      assumedStartAddress: 0,
+      expectedCount: 14
+    )
+
+    XCTAssertEqual(parsed.crcIsValid, true)
+    XCTAssertEqual(parsed.registerValues.count, 14)
+  }
+
+  func testCompactingResponseInputPreservesFrameSeparatingNewlines() {
+    let compact = HexFormatter.compactInput("01 03 00\r\n02　03 00")
+
+    XCTAssertEqual(compact, "010300\r\n020300")
+  }
+
   func testParseResponseSupportsMultipleLines() throws {
     let first = "01 03 04 00 2A 42 48 EB 6D"
     let second = HexFormatter.bytes(ModbusCRC.append(to: [0x01, 0x03, 0x04, 0x00, 0x2B, 0x42, 0x49]))

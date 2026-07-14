@@ -17,3 +17,12 @@ extension Binding where Value == UInt16 {
     )
   }
 }
+
+extension Binding where Value == String {
+  func compactingHexInput() -> Binding<String> {
+    Binding<String>(
+      get: { wrappedValue },
+      set: { wrappedValue = HexFormatter.compactInput($0) }
+    )
+  }
+}
