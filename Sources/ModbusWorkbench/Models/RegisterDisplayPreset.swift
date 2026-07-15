@@ -7,6 +7,7 @@ struct RegisterDisplayPreset: Identifiable, Codable, Equatable {
   var pointCount: Int
   var defaultMode: DataDisplayMode
   var overrides: [Int: DataDisplayMode]
+  var pointNames: [Int: String]
   var createdAt: Date
   var updatedAt: Date
 
@@ -23,6 +24,7 @@ struct RegisterDisplayPreset: Identifiable, Codable, Equatable {
     case pointCount
     case defaultMode
     case overrides
+    case pointNames
     case createdAt
     case updatedAt
   }
@@ -34,6 +36,7 @@ struct RegisterDisplayPreset: Identifiable, Codable, Equatable {
     pointCount: Int,
     defaultMode: DataDisplayMode,
     overrides: [Int: DataDisplayMode],
+    pointNames: [Int: String] = [:],
     createdAt: Date,
     updatedAt: Date
   ) {
@@ -43,6 +46,7 @@ struct RegisterDisplayPreset: Identifiable, Codable, Equatable {
     self.pointCount = pointCount
     self.defaultMode = defaultMode
     self.overrides = overrides
+    self.pointNames = pointNames
     self.createdAt = createdAt
     self.updatedAt = updatedAt
   }
@@ -53,6 +57,7 @@ struct RegisterDisplayPreset: Identifiable, Codable, Equatable {
     name = try container.decode(String.self, forKey: .name)
     defaultMode = try container.decode(DataDisplayMode.self, forKey: .defaultMode)
     overrides = try container.decode([Int: DataDisplayMode].self, forKey: .overrides)
+    pointNames = try container.decodeIfPresent([Int: String].self, forKey: .pointNames) ?? [:]
     createdAt = try container.decode(Date.self, forKey: .createdAt)
     updatedAt = try container.decode(Date.self, forKey: .updatedAt)
 

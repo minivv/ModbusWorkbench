@@ -254,6 +254,10 @@ private struct RegisterDisplayPresetControls: View {
             .textFieldStyle(.roundedBorder)
             .frame(width: 220)
 
+          Text("当前解析方式和点位名称会一并保存。")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+
           HStack {
             Spacer()
             Button("取消") {

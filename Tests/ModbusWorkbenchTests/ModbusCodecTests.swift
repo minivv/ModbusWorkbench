@@ -152,6 +152,7 @@ final class ModbusCodecTests: XCTestCase {
     store.expectedCountText = "35"
     store.parseResponse()
     store.setRegisterDisplayMode(.floatABCD, for: 5)
+    store.setRegisterPointName("进水温度", for: 5)
     store.saveCurrentRegisterDisplayPreset(named: "温度点位")
 
     XCTAssertEqual(store.registerDisplayPresets.count, 1)
@@ -161,6 +162,7 @@ final class ModbusCodecTests: XCTestCase {
     store.assumedStartAddress = 0
     store.parseDisplayMode = .signed16
     store.registerDisplayOverrides = [:]
+    store.registerPointNames = [:]
     store.parseResponse()
 
     store.applyRegisterDisplayPreset(id: presetID)
@@ -168,6 +170,7 @@ final class ModbusCodecTests: XCTestCase {
     XCTAssertEqual(store.parseDisplayMode, .unsigned16)
     XCTAssertEqual(store.assumedStartAddress, 5)
     XCTAssertEqual(store.registerDisplayOverrides[5], .floatABCD)
+    XCTAssertEqual(store.registerPointNames[5], "进水温度")
     XCTAssertEqual(store.registerComparisonRows.first?.mode, .floatABCD)
 
     let reloaded = WorkbenchStore(userDefaults: defaults)
@@ -175,6 +178,28 @@ final class ModbusCodecTests: XCTestCase {
     XCTAssertEqual(reloaded.registerDisplayPresets.first?.startAddress, 5)
     XCTAssertEqual(reloaded.registerDisplayPresets.first?.pointCount, 35)
     XCTAssertEqual(reloaded.registerDisplayPresets.first?.overrides[5], .floatABCD)
+    XCTAssertEqual(reloaded.registerDisplayPresets.first?.pointNames[5], "进水温度")
+  }
+
+  func testRegisterDisplayPresetDecodesWithoutPointNames() throws {
+    let preset = RegisterDisplayPreset(
+      id: UUID(),
+      name: "旧模板",
+      startAddress: 0,
+      pointCount: 2,
+      defaultMode: .unsigned16,
+      overrides: [:],
+      createdAt: Date(),
+      updatedAt: Date()
+    )
+    let encoded = try JSONEncoder().encode(preset)
+    var object = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+    object.removeValue(forKey: "pointNames")
+    let legacyData = try JSONSerialization.data(withJSONObject: object)
+
+    let decoded = try JSONDecoder().decode(RegisterDisplayPreset.self, from: legacyData)
+
+    XCTAssertTrue(decoded.pointNames.isEmpty)
   }
 
   func testRegisterDisplayPresetDeletePersists() throws {

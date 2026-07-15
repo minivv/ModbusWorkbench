@@ -46,7 +46,11 @@ struct DecodedItemsTable: View {
 
         LazyVStack(alignment: .leading, spacing: 0) {
           ForEach(comparisonRows) { row in
-            RegisterValueRow(row: row, mode: modeBinding(for: row.address))
+            RegisterValueRow(
+              row: row,
+              pointName: pointNameBinding(for: row.address),
+              mode: modeBinding(for: row.address)
+            )
               .padding(.vertical, 7)
               .background(row.address.isMultiple(of: 2) ? Color.clear : Color.secondary.opacity(0.06))
           }
@@ -91,11 +95,12 @@ struct DecodedItemsTable: View {
 
   private func tableWidth(valueCount: Int) -> CGFloat {
     RegisterTableLayout.addressWidth +
+      RegisterTableLayout.pointNameWidth +
       RegisterTableLayout.spanWidth +
       RegisterTableLayout.modeWidth +
       RegisterTableLayout.rawWidth +
       (CGFloat(valueCount) * RegisterTableLayout.valueWidth) +
-      (CGFloat(valueCount + 3) * RegisterTableLayout.columnSpacing) +
+      (CGFloat(valueCount + 4) * RegisterTableLayout.columnSpacing) +
       (RegisterTableLayout.horizontalPadding * 2)
   }
 
@@ -109,12 +114,24 @@ struct DecodedItemsTable: View {
       }
     )
   }
+
+  private func pointNameBinding(for address: Int) -> Binding<String> {
+    Binding(
+      get: {
+        store.registerPointNames[address] ?? ""
+      },
+      set: { newValue in
+        store.setRegisterPointName(newValue, for: address)
+      }
+    )
+  }
 }
 
 private enum RegisterTableLayout {
   static let columnSpacing: CGFloat = 8
   static let horizontalPadding: CGFloat = 10
   static let addressWidth: CGFloat = 50
+  static let pointNameWidth: CGFloat = 110
   static let spanWidth: CGFloat = 25
   static let modeWidth: CGFloat = 140
   static let rawWidth: CGFloat = 140
@@ -166,6 +183,7 @@ private struct RegisterHeaderRow: View {
       Text("占用").frame(width: RegisterTableLayout.spanWidth, alignment: .leading)
       Text("解析方式").frame(width: RegisterTableLayout.modeWidth, alignment: .leading)
       Text("原始值").frame(width: RegisterTableLayout.rawWidth, alignment: .leading)
+      Text("点位名称").frame(width: RegisterTableLayout.pointNameWidth, alignment: .leading)
       ForEach(0..<valueCount, id: \.self) { index in
         Text(valueCount == 1 ? "数值" : "数值 \(index + 1)")
           .frame(width: RegisterTableLayout.valueWidth, alignment: .leading)
@@ -181,6 +199,7 @@ private struct RegisterHeaderRow: View {
 
 private struct RegisterValueRow: View {
   let row: RegisterComparisonRow
+  @Binding var pointName: String
   @Binding var mode: DataDisplayMode
 
   var body: some View {
@@ -208,6 +227,10 @@ private struct RegisterValueRow: View {
         .lineLimit(1)
         .textSelection(.enabled)
         .frame(width: RegisterTableLayout.rawWidth, alignment: .leading)
+
+      TextField("填写名称", text: $pointName)
+        .textFieldStyle(.roundedBorder)
+        .frame(width: RegisterTableLayout.pointNameWidth)
 
       ForEach(row.values.indices, id: \.self) { index in
         RegisterValueCell(row: row.values[index], mode: mode)

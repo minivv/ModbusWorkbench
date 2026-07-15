@@ -16,6 +16,7 @@ final class WorkbenchStore: ObservableObject {
   @Published var responseText = "01 03 04 00 2A 42 48 EB 6D"
   @Published var parseDisplayMode: DataDisplayMode = .unsigned16
   @Published var registerDisplayOverrides: [Int: DataDisplayMode] = [:]
+  @Published var registerPointNames: [Int: String] = [:]
   @Published var assumedStartAddress: Int = 0
   @Published var expectedCountText = "2"
   @Published var parsedFrames: [ParsedFrame] = []
@@ -80,6 +81,14 @@ final class WorkbenchStore: ObservableObject {
     rebuildRegisterComparisonRows()
   }
 
+  func setRegisterPointName(_ name: String, for address: Int) {
+    if name.isEmpty {
+      registerPointNames.removeValue(forKey: address)
+    } else {
+      registerPointNames[address] = String(name.prefix(40))
+    }
+  }
+
   var canSaveRegisterDisplayPreset: Bool {
     !registerComparisonRows.isEmpty
   }
@@ -106,6 +115,7 @@ final class WorkbenchStore: ObservableObject {
       pointCount: currentRegisterDisplayPresetPointCount(),
       defaultMode: parseDisplayMode,
       overrides: currentRegisterDisplayPresetOverrides(),
+      pointNames: currentRegisterDisplayPresetPointNames(),
       createdAt: now,
       updatedAt: now
     )
@@ -132,6 +142,7 @@ final class WorkbenchStore: ObservableObject {
     assumedStartAddress = preset.startAddress
     parseDisplayMode = preset.defaultMode
     registerDisplayOverrides = preset.overrides
+    registerPointNames = preset.pointNames
     parseResponse()
   }
 
@@ -160,6 +171,7 @@ final class WorkbenchStore: ObservableObject {
     responseText = "01 03 04 00 2A 42 48 EB 6D"
     parseDisplayMode = .unsigned16
     registerDisplayOverrides = [:]
+    registerPointNames = [:]
     assumedStartAddress = 0
     expectedCountText = "2"
     parseResponse()
@@ -170,6 +182,7 @@ final class WorkbenchStore: ObservableObject {
     responseText = "01 03 04 42 48 00 00 6E 5D"
     parseDisplayMode = .floatABCD
     registerDisplayOverrides = [:]
+    registerPointNames = [:]
     assumedStartAddress = 0
     expectedCountText = "2"
     parseResponse()
@@ -180,6 +193,7 @@ final class WorkbenchStore: ObservableObject {
     responseText = "01 01 02 CD 01 2C AC"
     parseDisplayMode = .unsigned16
     registerDisplayOverrides = [:]
+    registerPointNames = [:]
     assumedStartAddress = 0
     expectedCountText = "10"
     parseResponse()
@@ -190,6 +204,7 @@ final class WorkbenchStore: ObservableObject {
     responseText = "00 01 00 00 00 03 01 83 02"
     parseDisplayMode = .unsigned16
     registerDisplayOverrides = [:]
+    registerPointNames = [:]
     assumedStartAddress = 0
     expectedCountText = ""
     parseResponse()
@@ -210,6 +225,17 @@ final class WorkbenchStore: ObservableObject {
     let visibleAddresses = Set(registerComparisonRows.map(\.address))
     return registerDisplayOverrides.filter { address, mode in
       visibleAddresses.contains(address) && mode != parseDisplayMode
+    }
+  }
+
+  private func currentRegisterDisplayPresetPointNames() -> [Int: String] {
+    let visibleAddresses = Set(registerComparisonRows.map(\.address))
+    return registerPointNames.reduce(into: [:]) { result, entry in
+      let (address, rawName) = entry
+      let name = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
+      if visibleAddresses.contains(address), !name.isEmpty {
+        result[address] = String(name.prefix(40))
+      }
     }
   }
 
